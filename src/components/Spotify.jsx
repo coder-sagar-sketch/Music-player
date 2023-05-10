@@ -1,19 +1,52 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import Body from './Body';
 import Footer from './Footer';
+import { useStateProvider } from '../utils/StateProvider';
+import axios from 'axios';
+import { reducerCases } from '../utils/Constants';
 
 export default function Spotify() {
+  const [{token }, dispatch ] = useStateProvider();
+  const bodyRef = useRef();
+  const [navBackground, setNavBackground] = useState(false); 
+  const [headerBackground, setHeaderBackground] = useState(false); 
+  const bodyScrolled = () =>{
+    bodyRef.current.scrollTop >=30 
+    ? setNavBackground(true)
+     : setNavBackground(false)
+    bodyRef.current.scrollTop >=268
+    ? setHeaderBackground(true)
+     : setHeaderBackground(false)
+  }
+  useEffect(() =>{
+    const getUserInfo = async () =>{
+      const {data} = await axios.get('https://api.spotify.com/v1/me', {
+        headers: {
+          Authorization: "Bearer "+token,
+          "Content-Type": "application/json",
+        }
+      });
+      
+      const userInfo = {
+        userId: data.id,
+        userName: data.display_name,
+      } 
+      dispatch({type: reducerCases.SET_USER, userInfo})
+    }
+    
+    getUserInfo();
+  }, [dispatch, token])
   return (
     <div><Container>
         <div className='spotify__body'>
             <Sidebar/>
-            <div className="body">
-                <Navbar/>
+            <div className="body" ref={bodyRef} onScroll={bodyScrolled}>
+                <Navbar navBackground={navBackground}/>
                 <div className="body__contents">
-                <Body />
+                <Body headerBackground = {headerBackground} />
                 </div>
             </div>
         </div>
@@ -41,6 +74,12 @@ grid-template-rows: 85vh 15vh;
     height: 100%;
     width: 100%;
     overflow: auto;
+    &::-webkit-scrollbar {
+      width: 0.7rem;
+      &-thumb {
+        background-color: rgba(255, 255, 255, 0.6);
+      }
+    }
    
   }
 }
